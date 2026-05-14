@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decadle — Memory Game</title>
+  <style>
+    :root {
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --text-primary: #1a1a1a;
+      --text-secondary: #555;
+      --text-tertiary: #999;
+      --text-danger: #a32d2d;
+      --text-info: #185FA5;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f4f4f2;
+      --bg-info: #E6F1FB;
+      --bg-danger: #FCEBEB;
+      --border-light: rgba(0,0,0,0.12);
+      --border-mid: rgba(0,0,0,0.25);
+      --border-info: #378ADD;
+      --border-danger: #E24B4A;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text-primary: #e8e8e6;
+        --text-secondary: #aaa;
+        --text-tertiary: #666;
+        --text-danger: #F7C1C1;
+        --text-info: #B5D4F4;
+        --bg-primary: #1c1c1a;
+        --bg-secondary: #272724;
+        --bg-info: #042C53;
+        --bg-danger: #501313;
+        --border-light: rgba(255,255,255,0.1);
+        --border-mid: rgba(255,255,255,0.2);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    #app { max-width: 640px; margin: 0 auto; padding: 1.2rem 1rem; }
+
+    .header { text-align: center; margin-bottom: 1rem; border-bottom: 0.5px solid var(--border-light); padding-bottom: .8rem; }
+    .header h1 { font-size: 28px; font-weight: 500; letter-spacing: 3px; color: var(--text-primary); }
+    .header p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+    .stats-row { display: flex; justify-content: center; gap: 12px; margin-top: 7px; flex-wrap: wrap; }
+    .stat-pill { font-size: 11px; color: var(--text-secondary); padding: 2px 10px; border: 0.5px solid var(--border-light); border-radius: 20px; }
+    .stat-pill span { font-weight: 500; color: var(--text-primary); }
+
+    .section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-align: center; letter-spacing: 1px; margin-bottom: .5rem; }
+
+    .diff-row, .cat-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: .6rem; }
+
+    .opt-btn {
+      padding: 6px 16px; font-size: 13px; border-radius: 20px;
+      border: 0.5px solid var(--border-mid); background: transparent;
+      color: var(--text-secondary); cursor: pointer;
+    }
+    .opt-btn:hover { background: var(--bg-secondary); }
+    .opt-btn.sel-easy   { background: #E1F5EE; border-color: #1D9E75; color: #085041; }
+    .opt-btn.sel-medium { background: #FAEEDA; border-color: #BA7517; color: #412402; }
+    .opt-btn.sel-hard   { background: #FCEBEB; border-color: #E24B4A; color: #501313; }
+    .opt-btn.sel-cat    { background: var(--bg-info); border-color: var(--border-info); color: var(--text-info); }
+
+    .start-btn {
+      display: block; width: 100%; padding: 13px; font-size: 16px; font-weight: 500;
+      border-radius: var(--radius-md); border: none; background: #1D9E75; color: #fff;
+      cursor: pointer; letter-spacing: 2px; margin-top: 1rem;
+    }
+    .start-btn:hover { background: #0F6E56; }
+
+    .timer-wrap { margin-bottom: 1rem; }
+    .timer-bar-bg { height: 10px; background: var(--bg-secondary); border-radius: 10px; overflow: hidden; margin-bottom: 6px; }
+    .timer-bar { height: 100%; border-radius: 10px; transition: width .9s linear, background .3s; }
+    .timer-num { text-align: center; font-size: 22px; font-weight: 500; color: var(--text-primary); }
+
+    .phase-label { text-align: center; font-size: 13px; color: var(--text-secondary); margin-bottom: .8rem; letter-spacing: 1px; }
+
+    .items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .item-card {
+      padding: 12px 6px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-light); background: var(--bg-secondary);
+      text-align: center;
+    }
+    .item-card .emoji { font-size: 26px; display: block; margin-bottom: 4px; }
+    .item-card .word  { font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 1.2; }
+
+    .recall-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .recall-card {
+      padding: 11px 6px; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-light); background: var(--bg-secondary);
+      text-align: center; cursor: pointer; transition: all .15s; user-select: none;
+    }
+    .recall-card:hover { border-color: var(--border-mid); background: var(--bg-primary); }
+    .recall-card.chosen { background: #E1F5EE; border-color: #1D9E75; }
+    .recall-card .emoji { font-size: 22px; display: block; margin-bottom: 3px; }
+    .recall-card .word  { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .recall-card.chosen .word { color: #085041; }
+
+    .sel-counter { text-align: center; font-size: 14px; color: var(--text-secondary); margin-bottom: .8rem; }
+    .sel-counter strong { color: var(--text-primary); font-size: 18px; }
+
+    .submit-btn {
+      display: block; width: 100%; padding: 12px; font-size: 15px; font-weight: 500;
+      border-radius: var(--radius-md); border: 0.5px solid var(--border-mid);
+      background: var(--bg-primary); color: var(--text-primary); cursor: pointer; letter-spacing: 1px;
+    }
+    .submit-btn:hover { background: var(--bg-secondary); }
+    .submit-btn.ready { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+    .submit-btn.ready:hover { background: #0F6E56; }
+
+    .score-hero { text-align: center; padding: 1.2rem; border-radius: var(--radius-lg); margin-bottom: 1rem; }
+    .score-hero.perfect { background: #E1F5EE; border: 0.5px solid #1D9E75; }
+    .score-hero.great   { background: #FAEEDA; border: 0.5px solid #BA7517; }
+    .score-hero.ok      { background: var(--bg-secondary); border: 0.5px solid var(--border-light); }
+    .score-num   { font-size: 52px; font-weight: 500; line-height: 1; }
+    .score-label { font-size: 16px; margin-top: 6px; }
+    .score-msg   { font-size: 13px; margin-top: 4px; opacity: .8; }
+
+    .results-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 1rem; }
+    .res-card { padding: 10px 5px; border-radius: var(--radius-md); text-align: center; }
+    .res-card .emoji { font-size: 20px; display: block; margin-bottom: 2px; }
+    .res-card .word  { font-size: 11px; font-weight: 500; line-height: 1.2; }
+    .res-card.hit   { background: #E1F5EE; border: 0.5px solid #1D9E75; color: #085041; }
+    .res-card.miss  { background: #FCEBEB; border: 0.5px solid #E24B4A; color: #501313; }
+    .res-card.wrong { background: #FAEEDA; border: 0.5px solid #BA7517; color: #412402; }
+
+    .res-label { font-size: 11px; color: var(--text-secondary); letter-spacing: .5px; margin-bottom: 5px; }
+
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: .8rem; }
+    .play-again-btn {
+      padding: 11px; font-size: 14px; font-weight: 500; border-radius: var(--radius-md);
+      border: 0.5px solid #1D9E75; background: transparent; color: #0F6E56; cursor: pointer; letter-spacing: 1px;
+    }
+    .play-again-btn:hover { background: #E1F5EE; }
+    .harder-btn {
+      padding: 11px; font-size: 14px; font-weight: 500; border-radius: var(--radius-md);
+      border: 0.5px solid var(--border-mid); background: var(--bg-primary);
+      color: var(--text-primary); cursor: pointer; letter-spacing: 1px;
+    }
+    .harder-btn:hover { background: var(--bg-secondary); }
+
+    @media (max-width: 480px) {
+      .items-grid  { grid-template-columns: repeat(2, 1fr); }
+      .recall-grid { grid-template-columns: repeat(2, 1fr); }
+      .results-grid { grid-template-columns: repeat(2, 1fr); }
+      .cat-row { gap: 4px; }
+      .opt-btn { padding: 5px 10px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+  const POOLS = {
+    food: { label: 'Food & Kitchen', items: [
+      {e:'🍎',w:'Apple'},{e:'🍞',w:'Bread'},{e:'🥛',w:'Milk'},{e:'🥚',w:'Eggs'},{e:'🧀',w:'Cheese'},
+      {e:'🧈',w:'Butter'},{e:'🍝',w:'Pasta'},{e:'🍚',w:'Rice'},{e:'☕',w:'Coffee'},{e:'🍵',w:'Tea'},
+      {e:'🍊',w:'Orange'},{e:'🍌',w:'Banana'},{e:'🥕',w:'Carrot'},{e:'🍅',w:'Tomato'},{e:'🍯',w:'Honey'},
+      {e:'🧄',w:'Garlic'},{e:'🌽',w:'Corn'},{e:'🥦',w:'Broccoli'},{e:'🍋',w:'Lemon'},{e:'🥑',w:'Avocado'},
+      {e:'🍇',w:'Grapes'},{e:'🥩',w:'Steak'},{e:'🧅',w:'Onion'},{e:'🫙',w:'Pickle'},{e:'🥜',w:'Peanut'}
+    ]},
+    animals: { label: 'Animals', items: [
+      {e:'🐘',w:'Elephant'},{e:'🐧',w:'Penguin'},{e:'🦒',w:'Giraffe'},{e:'🐬',w:'Dolphin'},{e:'🦘',w:'Kangaroo'},
+      {e:'🦩',w:'Flamingo'},{e:'🐆',w:'Leopard'},{e:'🐙',w:'Octopus'},{e:'🦍',w:'Gorilla'},{e:'🦚',w:'Peacock'},
+      {e:'🦊',w:'Fox'},{e:'🐪',w:'Camel'},{e:'🦁',w:'Lion'},{e:'🐻',w:'Bear'},{e:'🦅',w:'Eagle'},
+      {e:'🐊',w:'Crocodile'},{e:'🦦',w:'Otter'},{e:'🦔',w:'Hedgehog'},{e:'🐢',w:'Turtle'},{e:'🦜',w:'Parrot'},
+      {e:'🦋',w:'Butterfly'},{e:'🦓',w:'Zebra'},{e:'🐿️',w:'Squirrel'},{e:'🦭',w:'Seal'},{e:'🦈',w:'Shark'}
+    ]},
+    cities: { label: 'World Cities', items: [
+      {e:'🗼',w:'Paris'},{e:'🗽',w:'New York'},{e:'🎌',w:'Tokyo'},{e:'🏛️',w:'Rome'},{e:'🎡',w:'London'},
+      {e:'🌉',w:'Sydney'},{e:'🌃',w:'Cairo'},{e:'🏔️',w:'Zurich'},{e:'🌴',w:'Bangkok'},{e:'🎭',w:'Vienna'},
+      {e:'🌊',w:'Lisbon'},{e:'🏙️',w:'Seoul'},{e:'🌺',w:'Havana'},{e:'🎨',w:'Amsterdam'},{e:'🌸',w:'Kyoto'},
+      {e:'🌹',w:'Istanbul'},{e:'🏟️',w:'Berlin'},{e:'🌿',w:'Nairobi'},{e:'🎪',w:'Prague'},{e:'🌅',w:'Dublin'},
+      {e:'🎵',w:'Nashville'},{e:'🏖️',w:'Miami'},{e:'🌆',w:'Shanghai'},{e:'⛪',w:'Athens'},{e:'🌁',w:'Oslo'}
+    ]},
+    instruments: { label: 'Instruments', items: [
+      {e:'🎹',w:'Piano'},{e:'🎸',w:'Guitar'},{e:'🎺',w:'Trumpet'},{e:'🎻',w:'Violin'},{e:'🥁',w:'Drums'},
+      {e:'🪗',w:'Accordion'},{e:'🎷',w:'Saxophone'},{e:'🪕',w:'Banjo'},{e:'🎵',w:'Flute'},{e:'🎶',w:'Harp'},
+      {e:'🎙️',w:'Clarinet'},{e:'🎸',w:'Ukulele'},{e:'🪘',w:'Bongos'},{e:'🎻',w:'Cello'},{e:'🎺',w:'Trombone'},
+      {e:'🎹',w:'Organ'},{e:'🎵',w:'Oboe'},{e:'🎶',w:'Bassoon'},{e:'🥁',w:'Xylophone'},{e:'🎙️',w:'Mandolin'},
+      {e:'🪗',w:'Concertina'},{e:'🎷',w:'Cornet'},{e:'🎺',w:'Bugle'},{e:'🎻',w:'Viola'},{e:'🥁',w:'Tambourine'}
+    ]},
+    nature: { label: 'Nature', items: [
+      {e:'🌋',w:'Volcano'},{e:'🏔️',w:'Mountain'},{e:'🌊',w:'Ocean'},{e:'🌲',w:'Forest'},{e:'🏜️',w:'Desert'},
+      {e:'🌿',w:'Meadow'},{e:'🏝️',w:'Island'},{e:'🌅',w:'Sunrise'},{e:'❄️',w:'Blizzard'},{e:'🌈',w:'Rainbow'},
+      {e:'⚡',w:'Lightning'},{e:'🌕',w:'Full Moon'},{e:'☄️',w:'Comet'},{e:'🍄',w:'Mushroom'},{e:'🌻',w:'Sunflower'},
+      {e:'🍁',w:'Maple Leaf'},{e:'🪨',w:'Boulder'},{e:'🌾',w:'Wheat'},{e:'🌺',w:'Hibiscus'},{e:'🌵',w:'Cactus'},
+      {e:'🍂',w:'Autumn'},{e:'🌙',w:'Crescent'},{e:'🌪️',w:'Tornado'},{e:'🌊',w:'Waterfall'},{e:'🦋',w:'Butterfly'}
+    ]}
+  };
+
+  const TIMES = { easy: 30, medium: 22, hard: 15 };
+  const MSGS = {
+    10: ['Perfect score!', 'Outstanding memory!', 'Incredible — nothing slipped past you!'],
+    9:  ['Almost perfect!', 'Brilliant recall!', 'Just one got away — exceptional!'],
+    8:  ['Really well done!', 'Strong memory at work!', '8 out of 10 — impressive!'],
+    7:  ['Good effort!', 'Solid recall!', '7 out of 10 — well played!'],
+    6:  ['Not bad at all!', 'More than half — keep it up!', 'Your memory is working hard!'],
+    0:  ['Keep practising!', 'Every game trains your brain!', "You'll improve with each round!"]
+  };
+
+  // Load persisted stats or start fresh
+  function loadStats() {
+    try {
+      const s = JSON.parse(localStorage.getItem('decadle_stats') || '{}');
+      return { streak: s.streak || 0, bestStreak: s.bestStreak || 0, games: s.games || 0, totalPts: s.totalPts || 0 };
+    } catch { return { streak: 0, bestStreak: 0, games: 0, totalPts: 0 }; }
+  }
+
+  function saveStats(s) {
+    try { localStorage.setItem('decadle_stats', JSON.stringify({ streak: s.streak, bestStreak: s.bestStreak, games: s.games, totalPts: s.totalPts })); } catch {}
+  }
+
+  const saved = loadStats();
+  let state = {
+    phase: 'menu', diff: 'medium', cat: 'food',
+    targets: [], pool: [], selected: new Set(),
+    timeLeft: 0, timer: null, score: 0, lastScore: 0,
+    ...saved
+  };
+
+  function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+  function pick(arr, n) { return shuffle(arr).slice(0, n); }
+  function getMsg(s) { const k = s >= 9 ? s : s >= 7 ? s : s >= 6 ? 6 : 0; const arr = MSGS[k] || MSGS[0]; return arr[Math.floor(Math.random() * arr.length)]; }
+  function pct(s) { return s === 10 ? 'perfect' : s >= 8 ? 'great' : 'ok'; }
+
+  function startGame() {
+    if (state.timer) clearInterval(state.timer);
+    const pool = POOLS[state.cat].items;
+    const targets = pick(pool, 10);
+    const targetWords = new Set(targets.map(t => t.w));
+    const distractors = shuffle(pool.filter(i => !targetWords.has(i.w))).slice(0, 10);
+    const recallPool = shuffle([...targets, ...distractors]);
+    state = { ...state, phase: 'study', targets, pool: recallPool, selected: new Set(), timeLeft: TIMES[state.diff], score: 0 };
+    render();
+    state.timer = setInterval(() => {
+      state.timeLeft--;
+      const bar = document.getElementById('tbar');
+      const num = document.getElementById('tnum');
+      if (bar) { bar.style.width = (state.timeLeft / TIMES[state.diff] * 100) + '%'; bar.style.background = state.timeLeft > 10 ? '#1D9E75' : state.timeLeft > 5 ? '#EF9F27' : '#E24B4A'; }
+      if (num) num.textContent = state.timeLeft + 's';
+      if (state.timeLeft <= 0) { clearInterval(state.timer); goRecall(); }
+    }, 1000);
+  }
+
+  function goRecall() {
+    if (state.timer) clearInterval(state.timer);
+    state.phase = 'recall';
+    render();
+  }
+
+  function toggleSelect(w) {
+    if (state.selected.has(w)) state.selected.delete(w);
+    else if (state.selected.size < 10) state.selected.add(w);
+    renderRecallUI();
+  }
+
+  function submitRecall() {
+    if (state.timer) clearInterval(state.timer);
+    const targetWords = new Set(state.targets.map(t => t.w));
+    let correct = 0;
+    state.selected.forEach(w => { if (targetWords.has(w)) correct++; });
+    state.score = correct;
+    state.lastScore = correct;
+    state.games++;
+    state.totalPts += correct;
+    if (correct >= 8) state.streak++;
+    else state.streak = 0;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    saveStats(state);
+    state.phase = 'results';
+    render();
+  }
+
+  function render() {
+    const app = document.getElementById('app');
+    if      (state.phase === 'menu')    app.innerHTML = menuHTML();
+    else if (state.phase === 'study')   app.innerHTML = studyHTML();
+    else if (state.phase === 'recall')  app.innerHTML = recallHTML();
+    else if (state.phase === 'results') app.innerHTML = resultsHTML();
+    attachHandlers();
+  }
+
+  function statsBar() {
+    const avg = state.games ? Math.round(state.totalPts / state.games * 10) / 10 : '—';
+    return `<div class="stats-row">
+      <div class="stat-pill">Streak <span>${state.streak}</span></div>
+      <div class="stat-pill">Best <span>${state.bestStreak}</span></div>
+      <div class="stat-pill">Avg <span>${avg}</span></div>
+      <div class="stat-pill">Played <span>${state.games}</span></div>
+    </div>`;
+  }
+
+  function menuHTML() {
+    const diffs = ['easy', 'medium', 'hard'];
+    const diffLabels = { easy: 'Easy — 30s', medium: 'Medium — 22s', hard: 'Hard — 15s' };
+    return `<div class="header">
+      <h1>DECADLE</h1>
+      <p>Memorise 10 items. How many can you recall?</p>
+      ${statsBar()}
+    </div>
+    <p class="section-title">DIFFICULTY</p>
+    <div class="diff-row">
+      ${diffs.map(d => `<button class="opt-btn${state.diff === d ? ' sel-' + d : ''}" data-diff="${d}">${diffLabels[d]}</button>`).join('')}
+    </div>
+    <p class="section-title" style="margin-top:.8rem">CATEGORY</p>
+    <div class="cat-row">
+      ${Object.entries(POOLS).map(([k, v]) => `<button class="opt-btn${state.cat === k ? ' sel-cat' : ''}" data-cat="${k}">${v.label}</button>`).join('')}
+    </div>
+    <button class="start-btn" id="start-btn">START GAME</button>`;
+  }
+
+  function studyHTML() {
+    const p = Math.round(state.timeLeft / TIMES[state.diff] * 100);
+    const col = state.timeLeft > 10 ? '#1D9E75' : state.timeLeft > 5 ? '#EF9F27' : '#E24B4A';
+    return `<div class="header"><h1>DECADLE</h1><p>Memorise all 10 items!</p></div>
+    <div class="timer-wrap">
+      <div class="timer-bar-bg"><div class="timer-bar" id="tbar" style="width:${p}%;background:${col}"></div></div>
+      <div class="timer-num" id="tnum">${state.timeLeft}s</div>
+    </div>
+    <p class="phase-label">STUDY THESE 10 ITEMS</p>
+    <div class="items-grid">
+      ${state.targets.map(i => `<div class="item-card"><span class="emoji">${i.e}</span><span class="word">${i.w}</span></div>`).join('')}
+    </div>`;
+  }
+
+  function recallHTML() {
+    return `<div class="header"><h1>DECADLE</h1><p>Which items were in the list?</p></div>
+    <div class="sel-counter" id="sel-counter">Selected <strong>${state.selected.size}</strong> / 10</div>
+    <div class="recall-grid" id="recall-grid">
+      ${state.pool.map(i => `<div class="recall-card${state.selected.has(i.w) ? ' chosen' : ''}" data-word="${i.w}">
+        <span class="emoji">${i.e}</span><span class="word">${i.w}</span>
+      </div>`).join('')}
+    </div>
+    <button class="submit-btn${state.selected.size === 10 ? ' ready' : ''}" id="submit-recall">
+      ${state.selected.size === 10 ? 'SUBMIT ANSWERS' : 'SELECT ' + (10 - state.selected.size) + ' MORE'}
+    </button>`;
+  }
+
+  function renderRecallUI() {
+    const grid = document.getElementById('recall-grid');
+    const ctr  = document.getElementById('sel-counter');
+    const btn  = document.getElementById('submit-recall');
+    if (grid) grid.innerHTML = state.pool.map(i => `<div class="recall-card${state.selected.has(i.w) ? ' chosen' : ''}" data-word="${i.w}">
+      <span class="emoji">${i.e}</span><span class="word">${i.w}</span>
+    </div>`).join('');
+    if (ctr) ctr.innerHTML = `Selected <strong>${state.selected.size}</strong> / 10`;
+    if (btn) { btn.className = 'submit-btn' + (state.selected.size === 10 ? ' ready' : ''); btn.textContent = state.selected.size === 10 ? 'SUBMIT ANSWERS' : 'SELECT ' + (10 - state.selected.size) + ' MORE'; }
+    attachRecallHandlers();
+  }
+
+  function resultsHTML() {
+    const targetWords = new Set(state.targets.map(t => t.w));
+    const correct = [], missed = [], wrong = [];
+    state.targets.forEach(t => { if (state.selected.has(t.w)) correct.push(t); else missed.push(t); });
+    state.selected.forEach(w => { if (!targetWords.has(w)) { const item = state.pool.find(i => i.w === w); if (item) wrong.push(item); } });
+    const s = state.score;
+    const cls = pct(s);
+    const scoreCol = s === 10 ? '#085041' : s >= 8 ? '#412402' : 'var(--text-primary)';
+    const diffs = ['easy', 'medium', 'hard'];
+    const curIdx = diffs.indexOf(state.diff);
+    return `<div class="header"><h1>DECADLE</h1>${statsBar()}</div>
+    <div class="score-hero ${cls}">
+      <div class="score-num" style="color:${scoreCol}">${s}/10</div>
+      <div class="score-label" style="color:${scoreCol}">${getMsg(s)}</div>
+      ${state.streak > 1 ? `<div class="score-msg" style="color:${scoreCol}">Streak: ${state.streak} games with 8+</div>` : ''}
+    </div>
+    ${correct.length ? `<p class="res-label">REMEMBERED (${correct.length})</p>
+    <div class="results-grid">${correct.map(i => `<div class="res-card hit"><span class="emoji">${i.e}</span><span class="word">${i.w}</span></div>`).join('')}</div>` : ''}
+    ${missed.length ? `<p class="res-label">MISSED (${missed.length})</p>
+    <div class="results-grid">${missed.map(i => `<div class="res-card miss"><span class="emoji">${i.e}</span><span class="word">${i.w}</span></div>`).join('')}</div>` : ''}
+    ${wrong.length ? `<p class="res-label">WRONG PICKS (${wrong.length})</p>
+    <div class="results-grid">${wrong.map(i => `<div class="res-card wrong"><span class="emoji">${i.e}</span><span class="word">${i.w}</span></div>`).join('')}</div>` : ''}
+    <div class="btn-row">
+      <button class="play-again-btn" id="play-again">PLAY AGAIN</button>
+      <button class="harder-btn" id="try-harder">${curIdx < 2 ? 'TRY ' + diffs[curIdx + 1].toUpperCase() : 'CHANGE CATEGORY'}</button>
+    </div>`;
+  }
+
+  function attachHandlers() {
+    document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { state.diff = b.dataset.diff; render(); }));
+    document.querySelectorAll('[data-cat]').forEach(b  => b.addEventListener('click', () => { state.cat  = b.dataset.cat;  render(); }));
+    const sb = document.getElementById('start-btn');
+    if (sb) sb.addEventListener('click', startGame);
+    attachRecallHandlers();
+    const sr = document.getElementById('submit-recall');
+    if (sr) sr.addEventListener('click', () => { if (state.selected.size === 10) submitRecall(); });
+    const pa = document.getElementById('play-again');
+    if (pa) pa.addEventListener('click', startGame);
+    const th = document.getElementById('try-harder');
+    if (th) th.addEventListener('click', () => {
+      const diffs = ['easy', 'medium', 'hard'];
+      const idx = diffs.indexOf(state.diff);
+      if (idx < 2) { state.diff = diffs[idx + 1]; startGame(); }
+      else { state.phase = 'menu'; render(); }
+    });
+  }
+
+  function attachRecallHandlers() {
+    document.querySelectorAll('.recall-card').forEach(c => {
+      c.addEventListener('click', () => toggleSelect(c.dataset.word));
+    });
+  }
+
+  render();
+</script>
+</body>
+</html>
