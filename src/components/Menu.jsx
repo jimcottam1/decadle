@@ -1,35 +1,54 @@
-import { POOLS } from '../data/pools'
+import { POOLS, TIMES } from '../data/pools'
 
-const DIFF_LABELS = { easy: 'Easy — 30s', medium: 'Medium — 22s', hard: 'Hard — 15s' }
+const DIFF_LABELS = { easy: 'Easy', medium: 'Medium', hard: 'Hard' }
+const CAT_EMOJI   = { food: '🍔', animals: '🦁', cities: '🌍', instruments: '🎵', nature: '🌿' }
 
 export default function Menu({ diff, cat, onDiff, onCat, onStart }) {
   return (
     <>
-      <p className="section-title">DIFFICULTY</p>
-      <div className="diff-row">
-        {['easy', 'medium', 'hard'].map(d => (
-          <button
-            key={d}
-            className={`opt-btn${diff === d ? ' sel-' + d : ''}`}
-            onClick={() => onDiff(d)}
-          >
-            {DIFF_LABELS[d]}
-          </button>
-        ))}
+      <div className="menu-panels">
+        {/* Difficulty panel */}
+        <div className="panel-card">
+          <p className="panel-label">Difficulty</p>
+          {['easy', 'medium', 'hard'].map(d => (
+            <div
+              key={d}
+              className={`diff-item${diff === d ? ' active' : ''}`}
+              onClick={() => onDiff(d)}
+            >
+              <span className={`diff-dot dot-${d}`} />
+              <span className="diff-name">{DIFF_LABELS[d]}</span>
+              <span className="diff-time">{TIMES[d]}s</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Category panel */}
+        <div className="panel-card">
+          <p className="panel-label">Category</p>
+          <div className="cat-grid">
+            {Object.entries(POOLS).map(([k, v]) => (
+              <div
+                key={k}
+                className={`cat-tile${cat === k ? ' active' : ''}`}
+                onClick={() => onCat(k)}
+              >
+                <span className="cat-emoji-box">{CAT_EMOJI[k] ?? v.items[0].e}</span>
+                <span className="cat-name">{v.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <p className="section-title" style={{ marginTop: '.8rem' }}>CATEGORY</p>
-      <div className="cat-row">
-        {Object.entries(POOLS).map(([k, v]) => (
-          <button
-            key={k}
-            className={`opt-btn${cat === k ? ' sel-cat' : ''}`}
-            onClick={() => onCat(k)}
-          >
-            {v.label}
-          </button>
-        ))}
-      </div>
-      <button className="start-btn" onClick={onStart}>START GAME</button>
+
+      {/* CTA */}
+      <button className="cta-bar" onClick={onStart}>
+        <div className="cta-left">
+          <div className="cta-ready">Ready to play?</div>
+          <div className="cta-text">Start Game</div>
+        </div>
+        <div className="cta-arrow">›</div>
+      </button>
     </>
   )
 }
